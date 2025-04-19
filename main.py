@@ -1,27 +1,31 @@
-import random
-import time
-from kivy.app import App
-from kivy.uix.label import Label
-from kivy.clock import Clock
+name: Build Android APK
 
-# Lista de nomes de véias
-nomes = [
-    "Dona Marlene", "Dona Odete", "Dona Lourdes", "Dona Aparecida", "Dona Tereza",
-    "Dona Jandira", "Dona Neuza", "Dona Ivone", "Dona Cacilda", "Dona Sebastiana",
-    "Dona Dalva", "Dona Nair", "Dona Filomena", "Dona Antônia", "Dona Geralda",
-    "Dona Zuleide", "Dona Efigênia", "Dona Raimunda", "Dona Quitéria", "Dona Iracema"
-]
+on:
+  push:
+    branches:
+      - main
 
-class PixSimulator(App):
-    def build(self):
-        self.label = Label(text="Esperando PIX das véia...", font_size='20sp')
-        Clock.schedule_interval(self.simular_pix, random.randint(30, 60))
-        return self.label
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    def simular_pix(self, dt):
-        nome = random.choice(nomes)
-        valor = random.randint(10, 100)
-        self.label.text = f"💸 PIX recebido de {nome}: R$ {valor},00"
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v3
 
-if __name__ == '__main__':
-    PixSimulator().run()
+    - name: Instalar dependências
+      run: |
+        sudo apt update
+        sudo apt install -y zip unzip openjdk-17-jdk python3-pip python3-setuptools git
+        python3 -m pip install --upgrade pip
+        pip install buildozer cython
+
+    - name: Build APK
+      run: |
+        buildozer android debug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: apk-pix-veias
+        path: bin/*.apk
